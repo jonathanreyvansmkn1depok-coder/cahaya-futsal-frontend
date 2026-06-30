@@ -1,42 +1,52 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import apiClient from '@/lib/api';
 import toast from 'react-hot-toast';
-import { MapPin, Phone, Mail, Send } from 'lucide-react';
+import { MapPin, Phone, Mail, Send, LogIn } from 'lucide-react';
+import { useAuthStore } from '@/store';
+import Link from 'next/link';
 
 export default function ContactPage() {
+  const { isAuthenticated, user } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
     subject: '',
     message: '',
   });
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
 
+    if (!isAuthenticated) {
+      toast.error('Anda harus login terlebih dahulu untuk mengirim pesan.');
+      return;
+    }
+
+    setLoading(true);
     try {
       await apiClient.post('/contact', formData);
       toast.success('Pesan Anda telah terkirim! Kami akan segera meresponnya.');
       setFormData({
-        name: '',
-        email: '',
-        phone: '',
+        name: user?.name || '',
+        email: user?.email || '',
+        phone: user?.phone || '',
         subject: '',
         message: '',
       });
     } catch (error) {
-      toast.error('Gagal mengirim pesan. Silakan coba lagi.');
+      const errors = error.response?.data?.errors;
+      if (errors) {
+        Object.values(errors).flat().forEach((msg) => toast.error(msg));
+      } else {
+        toast.error(error.response?.data?.message || 'Gagal mengirim pesan. Silakan coba lagi.');
+      }
     } finally {
       setLoading(false);
     }
@@ -48,9 +58,7 @@ export default function ContactPage() {
       <section className="bg-gradient-to-r from-primary to-green-600 text-white py-20 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Hubungi Kami</h1>
-          <p className="text-lg text-green-100">
-            Punya pertanyaan? Kami siap membantu Anda
-          </p>
+          <p className="text-lg text-green-100">Punya pertanyaan? Kami siap membantu Anda</p>
         </div>
       </section>
 
@@ -58,7 +66,6 @@ export default function ContactPage() {
       <section className="py-16 bg-light">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-            {/* Address */}
             <div className="bg-white rounded-lg p-8 shadow-md hover:shadow-lg transition-shadow">
               <div className="flex items-center justify-center mb-4">
                 <MapPin className="text-primary" size={32} />
@@ -79,22 +86,17 @@ export default function ContactPage() {
               </div>
             </div>
 
-            {/* Phone */}
             <div className="bg-white rounded-lg p-8 shadow-md hover:shadow-lg transition-shadow">
               <div className="flex items-center justify-center mb-4">
                 <Phone className="text-primary" size={32} />
               </div>
               <h3 className="text-xl font-bold text-center mb-2">Telepon</h3>
-              <p className="text-center text-gray-600 text-lg font-semibold">
-                089526067381
-              </p>
+              <p className="text-center text-gray-600 text-lg font-semibold">089526067381</p>
               <p className="text-center text-gray-500 text-sm mt-4">
-                Tersedia Senin - Minggu<br />
-                08:00 - 22:00
+                Tersedia Senin - Minggu<br />08:00 - 22:00
               </p>
             </div>
 
-            {/* Email */}
             <div className="bg-white rounded-lg p-8 shadow-md hover:shadow-lg transition-shadow">
               <div className="flex items-center justify-center mb-4">
                 <Mail className="text-primary" size={32} />
@@ -104,13 +106,12 @@ export default function ContactPage() {
                 info@cahayafutsal.com
               </p>
               <p className="text-center text-gray-500 text-sm mt-4">
-                Respons dalam<br />
-                24 jam kerja
+                Respons dalam<br />24 jam kerja
               </p>
             </div>
           </div>
 
-          {/* Map Section */}
+          {/* Map */}
           <div className="mb-16">
             <h2 className="text-3xl font-bold mb-8 text-center">Lokasi Kami</h2>
             <div className="w-full h-96 rounded-lg overflow-hidden shadow-lg">
@@ -134,102 +135,111 @@ export default function ContactPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold mb-8 text-center">Kirim Pesan Kepada Kami</h2>
 
-          <form onSubmit={handleSubmit} className="bg-light rounded-lg p-8 shadow-md">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {/* Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nama Lengkap
-                </label>
+          {/* Gate: tampilkan form hanya jika sudah login */}
+          {!isAuthenticated ? (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-10 text-center shadow-md">
+              <LogIn size={48} className="mx-auto text-yellow-500 mb-4" />
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Login Diperlukan</h3>
+              <p className="text-gray-600 mb-6">
+                Anda harus login terlebih dahulu agar pesan Anda bisa kami balas dan terhubung ke akun Anda.
+              </p>
+              <div className="flex gap-4 justify-center">
+                <Link
+                  href="/auth/login"
+                  className="bg-primary text-white px-6 py-2 rounded-lg font-semibold hover:bg-opacity-90 transition-all"
+                >
+                  Masuk
+                </Link>
+                <Link
+                  href="/auth/register"
+                  className="border border-primary text-primary px-6 py-2 rounded-lg font-semibold hover:bg-primary hover:text-white transition-all"
+                >
+                  Daftar
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="bg-light rounded-lg p-8 shadow-md">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="Nama Anda"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="Email Anda"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-gray-50"
+                    required
+                    readOnly
+                  />
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nomor Telepon</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="Nomor telepon Anda"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+                />
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Subjek</label>
                 <input
                   type="text"
-                  name="name"
-                  value={formData.name}
+                  name="subject"
+                  value={formData.subject}
                   onChange={handleChange}
-                  placeholder="Nama Anda"
+                  placeholder="Subjek pesan Anda"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
                   required
                 />
               </div>
 
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Pesan</label>
+                <textarea
+                  name="message"
+                  value={formData.message}
                   onChange={handleChange}
-                  placeholder="Email Anda"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+                  placeholder="Tulis pesan Anda di sini"
+                  rows={6}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition resize-none"
                   required
                 />
               </div>
-            </div>
 
-            {/* Phone */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nomor Telepon
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="Nomor telepon Anda"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
-              />
-            </div>
-
-            {/* Subject */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Subjek
-              </label>
-              <input
-                type="text"
-                name="subject"
-                value={formData.subject}
-                onChange={handleChange}
-                placeholder="Subjek pesan Anda"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
-                required
-              />
-            </div>
-
-            {/* Message */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Pesan
-              </label>
-              <textarea
-                name="message"
-                value={formData.message}
-                onChange={handleChange}
-                placeholder="Tulis pesan Anda di sini"
-                rows={6}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition resize-none"
-                required
-              />
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              <Send size={20} className="mr-2" />
-              {loading ? 'Mengirim...' : 'Kirim Pesan'}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                <Send size={20} className="mr-2" />
+                {loading ? 'Mengirim...' : 'Kirim Pesan'}
+              </button>
+            </form>
+          )}
         </div>
       </section>
 
-      {/* Operating Hours Section */}
+      {/* Operating Hours */}
       <section className="py-16 bg-light">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold mb-8 text-center">Jam Operasional</h2>
@@ -256,7 +266,7 @@ export default function ContactPage() {
                     <span className="font-semibold">08:00 - 22:00</span>
                   </li>
                   <li className="flex justify-between">
-                    <span>Minggu (Hari Libur Pancasila)</span>
+                    <span>Minggu</span>
                     <span className="font-semibold">08:00 - 22:00</span>
                   </li>
                 </ul>
@@ -264,7 +274,7 @@ export default function ContactPage() {
             </div>
             <div className="mt-6 p-4 bg-yellow-50 border-l-4 border-secondary rounded">
               <p className="text-sm text-gray-700">
-                <strong>Catatan:</strong> Iduladha mulai mempengaruhi jam operasional ini. Untuk informasi terbaru, silakan hubungi kami.
+                <strong>Catatan:</strong> Untuk informasi terbaru jam operasional, silakan hubungi kami langsung.
               </p>
             </div>
           </div>
