@@ -5,10 +5,6 @@ import apiClient from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, AlertCircle, CheckCircle2, KeyRound } from 'lucide-react';
 
-export async function getStaticProps() {
-  return { props: {} };
-}
-
 function getPasswordStrength(password) {
   if (!password) return { score: 0, label: '', color: '' };
   let score = 0;

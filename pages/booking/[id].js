@@ -6,18 +6,6 @@ import apiClient from '@/lib/api';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Calendar, Clock, DollarSign } from 'lucide-react';
 
-// Wajib ada agar next export bisa menangani dynamic route /booking/[id]
-export async function getStaticPaths() {
-  return {
-    paths: [],         // Kosong karena data booking dinamis dari API
-    fallback: true,    // Halaman di-render di sisi client saat diakses
-  };
-}
-
-export async function getStaticProps() {
-  return { props: {} };
-}
-
 export default function BookingPage() {
   const router = useRouter();
   const { id: courtId } = router.query; // 🛠️ FIX: Membaca parameter dinamis Next.js '[id]' dengan benar
