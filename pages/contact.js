@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import apiClient from '@/lib/api';
 import toast from 'react-hot-toast';
-import { MapPin, Phone, Mail, Send, LogIn } from 'lucide-react';
+import { MapPin, Phone, Mail, Send, LogIn, MessageCircle } from 'lucide-react';
 import { useAuthStore } from '@/store';
 import Link from 'next/link';
 
@@ -135,7 +135,7 @@ export default function ContactPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold mb-8 text-center">Kirim Pesan Kepada Kami</h2>
 
-          {/* Gate: tampilkan form hanya jika sudah login */}
+          {/* Gate: tampilkan form + tombol live chat jika sudah login, atau prompt login jika belum */}
           {!isAuthenticated ? (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-10 text-center shadow-md">
               <LogIn size={48} className="mx-auto text-yellow-500 mb-4" />
@@ -144,21 +144,30 @@ export default function ContactPage() {
                 Anda harus login terlebih dahulu agar pesan Anda bisa kami balas dan terhubung ke akun Anda.
               </p>
               <div className="flex gap-4 justify-center">
-                <Link
-                  href="/auth/login"
-                  className="bg-primary text-white px-6 py-2 rounded-lg font-semibold hover:bg-opacity-90 transition-all"
-                >
+                <Link href="/auth/login" className="bg-primary text-white px-6 py-2 rounded-lg font-semibold hover:bg-opacity-90 transition-all">
                   Masuk
                 </Link>
-                <Link
-                  href="/auth/register"
-                  className="border border-primary text-primary px-6 py-2 rounded-lg font-semibold hover:bg-primary hover:text-white transition-all"
-                >
+                <Link href="/auth/register" className="border border-primary text-primary px-6 py-2 rounded-lg font-semibold hover:bg-primary hover:text-white transition-all">
                   Daftar
                 </Link>
               </div>
             </div>
           ) : (
+            <>
+              {/* Tombol Live Chat */}
+              <div className="mb-6 p-5 bg-primary/5 border border-primary/20 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-bold text-gray-800">Ingin chat langsung dengan Admin?</h3>
+                  <p className="text-sm text-gray-500">Gunakan fitur Live Support untuk obrolan real-time dengan tim kami.</p>
+                </div>
+                <Link
+                  href="/user/messages"
+                  className="flex-shrink-0 flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-opacity-90 transition-all"
+                >
+                  <MessageCircle size={18} />
+                  Buka Live Chat
+                </Link>
+              </div>
             <form onSubmit={handleSubmit} className="bg-light rounded-lg p-8 shadow-md">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
@@ -235,6 +244,7 @@ export default function ContactPage() {
                 {loading ? 'Mengirim...' : 'Kirim Pesan'}
               </button>
             </form>
+            </>
           )}
         </div>
       </section>
